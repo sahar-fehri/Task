@@ -4,21 +4,29 @@ import time
 #chain = dict([block.hash,block] for block in genechain.chain)
 
 balances = {}
+Transactions={};
+i=0;
 
 def Event_transfer(observed, sender, receiver, amount):
     global balances
-    #if( balances[sender]!=observed.balances[sender]  ):
-    #print observed.balances[sender], balances[sender], amount , balances[receiver] , observed.balances[receiver]
     balances[sender] = observed.balances[sender]
-       # balances[receiver] = observed.balances[receiver]
-
-
+    balances[receiver] = observed.balances[receiver]
+    #Transactions[]
+    #Transactions[0]=
     return {sender, receiver, amount}
 
 
 def watch_gen_accounts(observed,num):
     global balances
-    balances= observed.balances
+    balances= observed.balances.copy()
+
+def return_list_balances():
+    #print balances.values();
+    return balances;
+
+def getmedian():
+    return sorted(balances.values())[len(balances) / 2]
+
 
 
 

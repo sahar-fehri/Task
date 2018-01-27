@@ -63,10 +63,7 @@ class Accounts(object):
                 continue
             amount = random.randint(1, self.balances[sender])
             self.transfer.add_observer(middleware.Event_transfer,identify_observed=True)
-            print "sender" ,sender , ":",self.balances[sender],"reciver ",receiver, ":", self.balances[receiver], " amount",amount,"before transaction"
             self.transfer(sender, receiver, amount)
-            print "sender" , sender , ":" , self.balances[sender], "reciver " , receiver , ":" , self.balances[receiver], " amount" ,amount ,"after transaction"
-            print "-----------------------------------"
             return TransferEvent(sender, receiver, amount)
 
 
@@ -90,6 +87,7 @@ class Block(object):
         for t in other.transfers[:int(len(other.transfers) * fraction)]:
             self.transfers.append(t)
             self.accounts.transfer(t.sender, t.receiver, t.amount)
+
 
     @property
     def hash(self):
