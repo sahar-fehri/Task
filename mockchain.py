@@ -1,24 +1,22 @@
 import collections
-import random
-import json
 import hashlib
+import random
+
+from observed import event
 
 import middleware
-from observed import event
 
 
 def hexhash(x):
     return '0x' + hashlib.sha224(str(x)).hexdigest()[:6]
 
 
-TransferEvent = collections.namedtuple('TransferEvent', 'sender, receiver, amount')
-
-
-
+TransferEvent = collections.namedtuple('TransferEvent', 'id,sender, receiver, amount')
 
 
 class Accounts(object):
     initial_supply = 0
+    idTransaction = 0
 
     def __init__(self, num_accounts=0, copy_from=None):
         self.balances = dict()
@@ -49,9 +47,6 @@ class Accounts(object):
         self.balances[receiver] += amount
         assert self.supply == self.initial_supply
 
-
-
-
     def random_transfer(self):
         "generates a valid random transfer"
         while True:
@@ -62,14 +57,15 @@ class Accounts(object):
             if sender == receiver:
                 continue
             amount = random.randint(1, self.balances[sender])
-            self.transfer.add_observer(middleware.Event_transfer,identify_observed=True)
-            self.transfer(sender, receiver, amount)
-            return TransferEvent(sender, receiver, amount)
+            self.transfer.add_observer(middleware.Event_transfer, identify_observed=True)
+            transactionhash = hexhash(Accounts.idTransaction)
 
+            self.transfer(sender, receiver, amount)
+            Accounts.idTransaction = Accounts.idTransaction + 1
+            return TransferEvent(transactionhash, sender, receiver, amount)
 
 
 class Block(object):
-
     def __init__(self, prevblock=None, num_accounts=0):
         if not prevblock:  # genesis block
             self.accounts = Accounts(num_accounts=num_accounts)
@@ -88,18 +84,14 @@ class Block(object):
             self.transfers.append(t)
             self.accounts.transfer(t.sender, t.receiver, t.amount)
 
-
     @property
     def hash(self):
         return hexhash(repr(self.__dict__))
+
     @event
     def random_transfers(self, num):
         for i in range(num):
             self.transfers.append(self.accounts.random_transfer())
-
-
-
-
 
     def serialize(self, include_balances=False):
         s = dict(number=self.number,
@@ -111,9 +103,8 @@ class Block(object):
             s['balances'] = self.accounts.balances
         return s
 
-def callback(block,arg):
-    print block.number
-    print("callback was invoked with arg='%s'"%(arg,))
+
+
 
 def gen_chain(height, p_revert, num_accounts, max_transfers):
     head = Block(num_accounts=num_accounts)
@@ -145,14 +136,3 @@ def longest_revert(chain):
     return longest
 
 
-# random.seed(43)
-# chain = gen_chain(height=10, p_revert=0.5, num_accounts=100, max_transfers=10)
-# serialized_blocks = [b.serialize(include_balances=False) for b in chain]
-# # random.shuffle(serialized_blocks)
-# # print json.dumps(serialized_blocks, indent=4, sort_keys=True)
-# # print 'blocks: {} max reverted:{}'.format(len(chain), longest_revert(chain))
-# #
-# txs = []
-# for block in set(chain):
-#     txs.extend(block.transfers)
-# print 'total transfers:{} unique transfers:{}'.format(len(txs), len(set(txs)))

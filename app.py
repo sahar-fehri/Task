@@ -1,8 +1,13 @@
-import random
-import mockchain
-import middleware
-import os
 import json
+import os
+
+import middleware
+
+global chainexist
+chainexist = False;
+
+print chainexist
+
 
 ### FUNCTIONS ###
 
@@ -20,6 +25,8 @@ def get_user_choice():
     print("\n[1] Initiate Transaction")
     print("[2] Print Balances.")
     print("[3] Print Median")
+    print("[4] Print all Transactions")
+    print("[5] Print block By Transaction")
     print("[q] Quit.")
 
     return raw_input("What would you like to do? ")
@@ -32,25 +39,46 @@ def initiate_chain():
     inp.append(raw_input("Enter revert probability."))
     inp.append(raw_input("Enter number of accounts."))
     inp.append(raw_input("Enter max transaction per block."))
-    random.seed(43)
-    chain = mockchain.gen_chain(height=int(inp[0]), p_revert=float(inp[1]), num_accounts=int(inp[2]), max_transfers=int(inp[3]))
-    serialized_blocks = [b.serialize(include_balances=False) for b in chain]
-    # random.shuffle(serialized_blocks)
-    # print json.dumps(serialized_blocks, indent=4, sort_keys=True)
-    # print 'blocks: {} max reverted:{}'.format(len(chain), longest_revert(chain))
-    #
-    txs = []
-    for block in set(chain):
-        txs.extend(block.transfers)
-    print 'total transfers:{} unique transfers:{}'.format(len(txs), len(set(txs)))
+    middleware.initiate_chain(int(inp[0]), float(inp[1]), int(inp[2]), int(inp[3]))
+    global chainexist
+    chainexist = True
 
 
+def getBalances():
+    print chainexist
+    if (chainexist):
+        print json.dumps(middleware.return_list_balances(), indent=4, sort_keys=True)
+    else:
+        print "No chain was previously initiated!"
 
-def get_Balances():
-    print json.dumps(middleware.return_list_balances())
 
-def getmedian():
-    print "median is 2" +str(middleware.return_median())
+def getMedian():
+    if chainexist == True:
+        print "median is " + str(middleware.getmedian())
+    else:
+        print "No chain was previously initiated!"
+
+
+def getAllTransactions():
+    if chainexist == True:
+        print json.dumps([b.serialize(include_balances=False) for b in middleware.getLongestChain().values()], indent=4,
+                         sort_keys=True)
+    else:
+        print "No chain was previously initiated!"
+
+
+def getBlockById():
+    if chainexist == True:
+        id = raw_input("Enter id transaction")
+        block, long = middleware.getBlockByTransactionId(id)
+        if (block):
+            print json.dumps(block.serialize(), indent=4, sort_keys=True)
+            print " Number of confirmations is :", long
+        else:
+            print "invalid id"
+    else:
+        print "No chain was previously initiated!"
+
 
 def quit():
     # This function dumps the names into a file, and prints a quit message.
@@ -58,7 +86,6 @@ def quit():
 
 
 ### MAIN PROGRAM ###
-
 # Set up a loop where users can choose what they'd like to do.
 
 
@@ -73,9 +100,13 @@ while choice != 'q':
     if choice == '1':
         initiate_chain()
     elif choice == '2':
-        get_Balances()
+        getBalances()
     elif choice == '3':
-        getmedian()
+        getMedian()
+    elif choice == '4':
+        getAllTransactions()
+    elif choice == '5':
+        getBlockById()
     elif choice == 'q':
         quit()
         print("\nThanks for playing. Bye.")
